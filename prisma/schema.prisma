@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
@@ -61,7 +62,7 @@ model User {
 }
 
 model Lead {
-  id           String      @id @default(cuid())
+  id           String     @id @default(cuid())
   firmTag      String
   platform     String
   contactName  String
@@ -69,10 +70,10 @@ model Lead {
   phone        String?
   serviceType  String?
   city         String?
-  inquiryDate  DateTime    @default(now())
-  status       LeadStatus  @default(NEW)
+  inquiryDate  DateTime   @default(now())
+  status       LeadStatus @default(NEW)
   ownerId      String?
-  owner        User?       @relation("OwnerLeads", fields: [ownerId], references: [id])
+  owner        User?      @relation("OwnerLeads", fields: [ownerId], references: [id])
   lastTouch    DateTime?
   nextAction   String?
   nextActionAt DateTime?
@@ -107,8 +108,7 @@ model Project {
   payments     Payment[]
   changeOrders ChangeOrder[]
 
-  // back-reference to Lead (1:1)
-  lead         Lead          @relation(fields: [leadId], references: [id])
+  lead Lead @relation(fields: [leadId], references: [id])
 }
 
 model Invoice {
@@ -124,23 +124,23 @@ model Invoice {
 }
 
 model Payment {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   projectId String
   date      DateTime
   amount    Float
   method    String
   appliesTo String?
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id])
 }
 
 model ChangeOrder {
-  id        String  @id @default(cuid())
+  id        String   @id @default(cuid())
   projectId String
   date      DateTime
   title     String
   delta     Float
   status    String
-  project   Project @relation(fields: [projectId], references: [id])
+  project   Project  @relation(fields: [projectId], references: [id])
 }
 
 model Activity {
