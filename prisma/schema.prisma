@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  PM
+  SALES
+  ACCOUNTING
+  STAFF
+}
+
+enum LeadStatus {
+  NEW
+  WORKING
+  MEETING_SET
+  PROPOSAL_OUT
+  ACCEPTED
+  REJECTED
+  NO_RESPONSE
+  CLOSED
+}
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  NEGOTIATING
+  ACCEPTED
+  REJECTED
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  ON_HOLD
+  CLOSED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  hash      String
+  role      Role     @default(STAFF)
+  createdAt DateTime @default(now())
+  leads     Lead[]   @relation("OwnerLeads")
+}
+
+model Lead {
+  id           String      @id @default(cuid())
+  firmTag      String
+  platform     String
+  contactName  String
+  email        String?
+  phone        String?
+  serviceType  String?
+  city         String?
+  inquiryDate  DateTime    @default(now())
+  status       LeadStatus  @default(NEW)
+  ownerId      String?
+  owner        User?       @relation("OwnerLeads", fields: [ownerId], references: [id])
+  lastTouch    DateTime?
+  nextAction   String?
+  nextActionAt DateTime?
+  notes        String?
+  proposals    Proposal[]
+  activities   Activity[]
+  project      Project?
+}
+
+model Proposal {
+  id         String         @id @default(cuid())
+  leadId     String
+  amount     Float
+  sentAt     DateTime
+  status     ProposalStatus @default(DRAFT)
+  decisionAt DateTime?
+  lead       Lead           @relation(fields: [leadId], references: [id])
+}
+
+model Project {
+  id           String        @id @default(cuid())
+  code         String        @unique
+  leadId       String        @unique
+  client       String
+  address      String?
+  brand        String?
+  status       ProjectStatus @default(ACTIVE)
+  contract     Float
+  startDate    DateTime?
+  endDate      DateTime?
+  invoices     Invoice[]
+  payments     Payment[]
+  changeOrders ChangeOrder[]
+
+  // back-reference to Lead (1:1)
+  lead         Lead          @relation(fields: [leadId], references: [id])
+}
+
+model Invoice {
+  id        String        @id @default(cuid())
+  projectId String
+  date      DateTime
+  title     String
+  amount    Float
+  status    InvoiceStatus @default(DRAFT)
+  dueDate   DateTime?
+  paidDate  DateTime?
+  project   Project       @relation(fields: [projectId], references: [id])
+}
+
+model Payment {
+  id        String  @id @default(cuid())
+  projectId String
+  date      DateTime
+  amount    Float
+  method    String
+  appliesTo String?
+  project   Project @relation(fields: [projectId], references: [id])
+}
+
+model ChangeOrder {
+  id        String  @id @default(cuid())
+  projectId String
+  date      DateTime
+  title     String
+  delta     Float
+  status    String
+  project   Project @relation(fields: [projectId], references: [id])
+}
+
+model Activity {
+  id      String   @id @default(cuid())
+  leadId  String
+  at      DateTime @default(now())
+  channel String
+  note    String
+  lead    Lead     @relation(fields: [leadId], references: [id])
+}
